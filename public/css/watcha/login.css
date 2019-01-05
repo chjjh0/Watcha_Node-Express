@@ -1,0 +1,86 @@
+/* login */
+.login {
+    width: 100%;
+    height: 100%;
+}
+/* overlay-login */
+.overlay-login {
+    position: fixed;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    overflow: hidden;
+}
+/* backgroundImg */
+.backgroundImg {
+    position: fixed;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    background: purple;
+    overflow: hidden;
+}
+
+.backgroundImg > img {
+    position: relative;
+    top: -200px;
+    widows: 100%;
+    height: 140%;
+}
+
+/* login-container */
+.login-container {
+    position: relative;
+    top: -200px;
+    z-index: 2;
+    top: 100px;
+    left: 350px;
+    width: 350px;
+    height: 500px;
+    font-size: 22px;
+    color: white;
+}
+
+.login-container hr {
+    width: 300px;
+    margin: 0 auto;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* sign common */
+.signin,
+.signup {
+    width: 350px;
+    height: 70px;
+    margin: 30px 0;
+    text-align: center;
+    line-height: 70px;
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 35px;
+    cursor: pointer;
+}
+/* signin */
+.signin {
+    background: rgba(0, 198, 255, 0.8);
+}
+/* signup */
+.signup {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* test */
+input {
+    border: 10px solid transparent;
+    outline: none;
+    padding: 15px;
+    background: transparent;
+    font-size: 25px;
+    -webkit-border-image: url(../img/border.png) 30 round; /* Safari 3.1-5 */
+    -o-border-image: url(../img/border.png) 30 round; /* Opera 11-12.1 */
+    border-image: url(../img/border.png) 30 round;
+}
+
+input::placeholder {
+    color: rgba(0, 198, 255, 0.8);
+}

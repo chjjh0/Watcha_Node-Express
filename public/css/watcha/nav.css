@@ -1,0 +1,176 @@
+/* nav */
+.nav {
+    position: fixed;
+    width: 100%;
+    height: 60px;
+    z-index: 5;
+    background: rgb(2, 175, 132);
+  }
+  /* lnb */
+  .lnb {
+    position: relative;
+    width: 1400px;
+    height: 60px;
+    margin: 0 auto;
+  }
+  
+  .lnb > p {
+    display: inline-block;
+    margin: 0 5px;
+    line-height: 60px;
+    font-weight: bold;
+  }
+  
+  .lnb > p:nth-child(2) {
+    margin: 0 10px;
+  }
+  
+  /* paymentBox */
+  .lnb > .paymentBox {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+  
+  .lnb > .paymentBox > div {
+    background: black;
+    display: inline-block;
+    color: white;
+    width: 130px;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+    font-weight: bold;
+    margin: 0 5px;
+  }
+  
+  .paymentBox > .payment-bar,
+  .paymentBox > .payment-coupon {
+    cursor: pointer;
+  }
+  
+  /* gnb */
+  .gnb {
+    width: 100%;
+    height: 90px;
+    position: fixed;
+    z-index: 5;
+    background: transparent;
+  }
+  
+  .gnb a {
+    color: #888;
+  }
+  
+  .gnbInner {
+    width: 1400px;
+    height: 90px;
+    margin: 0 auto;
+    font-weight: bold;
+  }
+  
+  /* leftNav */
+  .gnbInner .leftNav {
+    display: block;
+    width: 600px;
+    height: 90px;
+    float: left;
+  }
+  
+  .leftNav .logo {
+    float: left;
+    width: 230px;
+    height: 90px;
+    background: url('../img/logo.png') no-repeat center/cover;
+  }
+  
+  .leftNav > .btnCategory,
+  .leftNav > .evaluation {
+    display: inline-block;
+    line-height: 90px;
+  }
+  
+  /*rightNav*/
+  .rightNav {
+    float: right;
+    height: 90px;
+  }
+  
+  .rightNav > a {
+    padding: 0 20px;
+    line-height: 90px;
+    transition: all 0.3s;
+  }
+  
+  .rightNav a > .searchBar {
+    width: 0;
+    height: 30px;
+    opacity: 0;
+    font-size: 15px;
+    color: #888;
+    transition: all 0.4s;
+  }
+  
+  /* btnCategory */
+  .btnCategory > a {
+    display: block;
+    width: 100%;
+    padding: 0 40px;
+  }
+  
+  /* category-container */
+  .category-container{
+    display: none;
+    top: 70px;
+    left: 360px;
+    width: 360px;
+    height: 360px;
+    background: rgba(0, 0, 0, 0.4);
+    color: #888;
+    border-radius: 5px;
+    transition: all 0.5s;
+    line-height: 30px;
+    box-sizing: border-box;
+  }
+  
+  .category-container > li {
+    width: 120px;
+    height: 30px;
+    display: inline-block;
+    cursor: pointer;
+    text-align: center;
+  }
+  
+  .category-container > .genre > ul,
+  .category-container > .nation > ul,
+  .category-container > .hash > ul {
+    display: none;
+    position: absolute;
+    top: 50px;
+    left: 10px;
+  }
+  
+  .category-container > .active
+  {
+    color: white;
+    border-bottom: 2px solid white;
+  }
+
+  /* hover-nav */
+  /* category-container li:hover */
+  .category-container > li:hover {
+    background: rgba(182, 182, 182, 0.8);
+  }
+  /* btnCategory:hover */
+  .btnCategory:hover .category-container
+  {
+    display: block;
+    top: 70px;
+    position: absolute;
+    opacity: 1;
+    transition: all 0.5s;
+  }
+  /* btnCategory:hover */
+  .btnCategory:hover .category-container > .genre > ul {
+    display: block;
+  }
