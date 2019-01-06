@@ -22,9 +22,10 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 
-app.get('/', (req, res, next) => {
+app.get('/*', (req, res, next) => {
     res.sendFile(__dirname + "/public/main.html");
 });
+
 
 app.post('/join', function(req, res) {
     console.log('welcome to join')
@@ -32,6 +33,14 @@ app.post('/join', function(req, res) {
     console.log(req.body.id)
     console.log(req.body.passwd)
     
+    const email = req.body.email;
+    const id = req.body.id;
+    const password = req.body.passwd;
+
+    var query = connection.query('insert into user (email, id, password) values(?, ?, ?)', [email, id, password], function(err, res){
+        if(err) throw err;
+        console.log('join success');
+    })
 
 })
 
