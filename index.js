@@ -8,6 +8,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const flash = require('connect-flash');
+const { isLoggedIn, isNotLoggedIn } = require('./public/router/middlewares');
 
 
 const portNo = 3001;
@@ -54,7 +55,7 @@ passport.deserializeUser(function(id, done) {
         done(null, user)
     })
 })
-
+// join use passport
 passport.use('local-join', new LocalStrategy({
     usernameField: 'userId',
     passwordField: 'password',
@@ -70,7 +71,7 @@ passport.use('local-join', new LocalStrategy({
             return done(null, false, {message : 'your id is already used'})
         } else {
             console.log('id create')
-            var email = "test35email@naver.com"
+            var email = "test37email@naver.com"
             var sql = {email, id, password}
             var query = connection.query('insert into user set ?', sql, function(err, rows) {
                 if(err) throw err;
@@ -81,6 +82,44 @@ passport.use('local-join', new LocalStrategy({
     })
 }
 ))
+// login use passport
+passport.use('local-login', new LocalStrategy({
+    usernameField: 'userId',
+    passwordField: 'password',
+    passReqToCallback: true
+}, function(req, id, password, done) {
+    console.log('local-login')
+    console.log('id: '+id)
+    console.log('password: '+password)
+    var query = connection.query('select * from user where id=?', [id], function(err, rows) {
+        if(err) return done(err);
+        if(rows.length) {
+            console.log('had id')
+            console.log('id: '+id)
+            console.log('password: '+password)
+            var query = connection.query(
+                'select * from user where id=? and password=?',
+                [id, password],
+                function(err, rows) {
+                if(err) {
+                    console.log('The Password do not match')
+                    return done(err);
+                } else if(rows.length){
+                    console.log('sever side login success!!')
+                    console.log('rows[0]: '+rows[0].email)
+                    console.log('rows[0]: '+rows[0].UID)
+                    return done(null, {'email': rows[0].email, 'id': rows[0].UID});
+                }
+                }
+            )
+        } else {
+            console.log('id not found')
+            return done(null, false, {'message': 'your login info is not found!!'})
+        }
+    })
+}
+))
+
 
 // GET routing
 app.use('/', main)
@@ -88,38 +127,57 @@ app.use('/main', main)
 app.use('/join', main)
 app.use('/login', main)
 
-// POST routing
-app.post('/join', passport.authenticate('local-join', {
-    successRedirect: '/main',
-    failureRedirect: '/join',
-    failureFlash: true
-}))
-
-app.post('/login', function(req, res) {
-    var id = req.body.id;
+// POST join
+app.post('/join', isNotLoggedIn, async (req, res, next) => {
+    console.log('====POST /join')
+    console.log('email: ', req.body.email)
+    console.log('id: ', req.body.userId)
+    console.log('password: ', req.body.password)
+    var email = req.body.email;
+    var id = req.body.userId;
     var password = req.body.password;
-    // get : req.param('email');
-    console.log(id);
-    console.log(password);
-    var query = connection.query('select * from user where id=? and password=?', [id, password], function(err, rows) {
-        if(err) throw err;
-        if(rows[0]) {
-            console.log('login success')
-            console.log(rows[0].id)
-            console.log(rows[0].password)
-            console.log(rows[0].email)
-            var resResult = {
-                id: rows[0].id,
-                passwd: rows[0].password,
-                email: rows[0].email
-            };
-            res.send(resResult)
+    console.log('비구조화 할당')
+    console.log('email: ', email)
+    console.log('id: ', id)
+    console.log('password: ', password)
+    var query = connection.query('select id from user where id=?', [id], function(err, res) {
+        console.log('inside query')
+        if(err) {
+            console.log('err 발생')
+            console.log('err: '+err)
+            
         } else {
-            console.log('check your id or password' )
-            res.json({errMsg: "check your id or password"})
+            var sql = {email, id, password}
+            var query = connection.query('insert into user set ?', sql, function(err, rows) {
+                if(err) throw err;
+                if(rows[0]) {
+                    console.log('join success!!!!')
+                    console.log('rows id: '+rows.insertId)
+                    console.log('rows id: '+rows[0].id)
+                    console.log('rows id: '+rows[0].email)
+                }
+            })
         }
-    })
+    })    
+        
+})
 
+// POST login
+app.post('/login', function(req, res, next) {
+    console.log('POST /login')
+    console.log('id: '+req.body.userId);
+    console.log('password: '+req.body.password);
+    passport.authenticate('local-login', function(err, user, info) {
+        if(err) res.status(500).json(err);
+        if(!user) return res.status(401).json(info.message);
+
+        req.logIn(user, function(err) {
+            if(err) {return next(err);}
+            console.log('req.logIn')
+            console.log('getId: '+user.id)
+            return res.json(user);
+        });
+    })(req, res, next)
 })
 
 
