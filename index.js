@@ -126,6 +126,7 @@ app.use('/', main)
 app.use('/main', main)
 app.use('/join', main)
 app.use('/login', main)
+app.use('/category', main)
 
 // POST join
 app.post('/join', isNotLoggedIn, async (req, res, next) => {
