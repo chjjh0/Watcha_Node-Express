@@ -228,32 +228,48 @@ app.post('/join', isNotLoggedIn, async (req, res, next) => {
     console.log('id: ', req.body.userId)
     console.log('password: ', req.body.password)
     var email = req.body.email;
-    var id = req.body.userId;
+    var id = req.body.id;
     var password = req.body.password;
     console.log('비구조화 할당')
     console.log('email: ', email)
     console.log('id: ', id)
     console.log('password: ', password)
-    var query = connection.query('select id from user where id=?', [id], function(err, res) {
+    var query = connection.query('select id from user where id=?', [id], function(err, rows) {
         console.log('inside query')
         if(err) {
             console.log('err 발생')
             console.log('err: '+err)
-            
+            res.send({
+                errMsg: err
+            })
+        } 
+        if(rows.length >= 1) {
+            console.log('id is already exists: '+rows[0].id)
+            res.send({
+                existsMsg: 'id가 이미 존재합니다'
+            })
+        // /if
         } else {
-            var sql = {email, id, password}
+            var sql = {email, id , password}    
+            console.log('======sql')
+            console.log('======sql id: '+sql.id)
+            console.log('======sql email: '+sql.email)
+            console.log('======sql password: '+sql.password)
             var query = connection.query('insert into user set ?', sql, function(err, rows) {
                 if(err) throw err;
-                if(rows[0]) {
-                    console.log('join success!!!!')
-                    console.log('rows id: '+rows.insertId)
-                    console.log('rows id: '+rows[0].id)
-                    console.log('rows id: '+rows[0].email)
-                }
+                if(rows.insertId){
+                console.log('join success!!!!')
+                console.log('rows id: '+rows.insertId)
+                res.send({
+                    successMsg: 'Welcome!!'
+                })
+            }
+            // /query
             })
         }
-    })    
-        
+    // /query
+    })
+// /join
 })
 
 // POST /login
