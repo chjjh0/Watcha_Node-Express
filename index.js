@@ -8,7 +8,10 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const flash = require('connect-flash');
-const { isLoggedIn, isNotLoggedIn } = require('./public/router/middlewares');
+const {
+    isLoggedIn,
+    isNotLoggedIn
+} = require('./public/router/middlewares');
 
 
 const portNo = 3001;
@@ -29,7 +32,9 @@ app.listen(portNo, () => {
 
 app.use(express.static('public'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended:true}));
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
 app.use(session({
     secret: 'keyboard cat',
     resave: false,
@@ -40,17 +45,17 @@ app.use(passport.session());
 app.use(flash());
 
 // passport Strategy
-passport.serializeUser(function(user, done) {
+passport.serializeUser(function (user, done) {
     console.log('===serializeuser')
     console.log('passport session save :', user.id)
     done(null, user.id)
 })
 
-passport.deserializeUser(function(id, done) {
+passport.deserializeUser(function (id, done) {
     console.log('===deserializeuser')
     console.log('passport session getId :', id)
-    var query = connection.query('select id from user where UID=?', [id], function(err, user) {
-        if(err) throw err;
+    var query = connection.query('select id from user where UID=?', [id], function (err, user) {
+        if (err) throw err;
         console.log('id : ', user[0].id)
         done(null, user)
     })
@@ -60,81 +65,90 @@ passport.use('local-join', new LocalStrategy({
     usernameField: 'userId',
     passwordField: 'password',
     passReqToCallback: true
-}, function(req, id, password, done) {
+}, function (req, id, password, done) {
     console.log('local-join callback called')
     console.log(id)
     console.log(password)
-    var query = connection.query('select * from user where id=?', [id], function(err, rows){
-        if(err) return done(err);
-        if(rows.length) {
+    var query = connection.query('select * from user where id=?', [id], function (err, rows) {
+        if (err) return done(err);
+        if (rows.length) {
             console.log('existed user')
-            return done(null, false, {message : 'your id is already used'})
+            return done(null, false, {
+                message: 'your id is already used'
+            })
         } else {
             console.log('id create')
             var email = "test37email@naver.com"
-            var sql = {email, id, password}
-            var query = connection.query('insert into user set ?', sql, function(err, rows) {
-                if(err) throw err;
-                console.log('rows id: '+rows.insertId)
-                return done(null, {'email: ' :email, 'id': rows.insertId});
+            var sql = {
+                email,
+                id,
+                password
+            }
+            var query = connection.query('insert into user set ?', sql, function (err, rows) {
+                if (err) throw err;
+                console.log('rows id: ' + rows.insertId)
+                return done(null, {
+                    'email: ': email,
+                    'id': rows.insertId
+                });
             })
         }
     })
-}
-))
+}))
 // login use passport
 passport.use('local-login', new LocalStrategy({
     usernameField: 'userId',
     passwordField: 'password',
     passReqToCallback: true
-}, function(req, id, password, done) {
+}, function (req, id, password, done) {
     console.log('local-login')
-    console.log('id: '+id)
-    console.log('password: '+password)
-    var query = connection.query('select * from user where id=?', [id], function(err, rows) {
-        if(err) return done(err);
-        if(rows.length) {
+    console.log('id: ' + id)
+    console.log('password: ' + password)
+    var query = connection.query('select * from user where id=?', [id], function (err, rows) {
+        if (err) return done(err);
+        if (rows.length) {
             console.log('had id')
-            console.log('id: '+id)
-            console.log('password: '+password)
+            console.log('id: ' + id)
+            console.log('password: ' + password)
             var query = connection.query(
                 'select * from user where id=? and password=?',
                 [id, password],
-                function(err, rows) {
-                if(err) {
-                    console.log('The Password do not match')
-                    return done(err);
-                } else if(rows.length){
-                    console.log('sever side login success!!')
-                    console.log('rows[0]: '+rows[0].email)
-                    console.log('rows[0]: '+rows[0].UID)
-                    return done(null, {'email': rows[0].email, 'id': rows[0].UID});
-                }
+                function (err, rows) {
+                    if (err) {
+                        console.log('The Password do not match')
+                        return done(err);
+                    } else if (rows.length) {
+                        console.log('sever side login success!!')
+                        console.log('rows[0]: ' + rows[0].email)
+                        console.log('rows[0]: ' + rows[0].UID)
+                        return done(null, {
+                            'email': rows[0].email,
+                            'id': rows[0].UID
+                        });
+                    }
                 }
             )
         } else {
             console.log('id not found')
-            return done(null, false, {'message': 'your login info is not found!!'})
+            return done(null, false, {
+                'message': 'your login info is not found!!'
+            })
         }
     })
-}
-))
-
-
+}))
 // GET routing
 app.use('/', main)
 app.use('/main', main)
 app.use('/join', main)
 app.use('/login', main)
 app.use('/category', main)
-
 // GET /category/init
-app.get('/category/init', function(req, res) {
+app.get('/category/init', function (req, res) {
     console.log('====/category/init')
-    console.log('req.body.categoryState: '+req.body.categoryState);
-    var query = connection.query('select * from video', function(err, rows) {
+    console.log('req.body.categoryState: ' + req.body.categoryState);
+    var query = connection.query('select * from video', function (err, rows) {
         console.log('======category inside')
-        if(err) throw err;
+        if (err) throw err;
         console.log(rows[0].image)
         console.log(rows[0].title)
         console.log(rows[0].releaseYear)
@@ -156,7 +170,7 @@ app.get('/category/init', function(req, res) {
             message: 'category success',
             video: rows,
             videoLength: rows.length
-        })     
+        })
     })
 })
 
@@ -174,60 +188,64 @@ app.post('/join', isNotLoggedIn, async (req, res, next) => {
     console.log('email: ', email)
     console.log('id: ', id)
     console.log('password: ', password)
-    var query = connection.query('select id from user where id=?', [id], function(err, rows) {
+    var query = connection.query('select id from user where id=?', [id], function (err, rows) {
         console.log('inside query')
-        if(err) {
+        if (err) {
             console.log('err 발생')
-            console.log('err: '+err)
+            console.log('err: ' + err)
             res.send({
                 errMsg: err
             })
-        } 
-        if(rows.length >= 1) {
-            console.log('id is already exists: '+rows[0].id)
+        }
+        if (rows.length >= 1) {
+            console.log('id is already exists: ' + rows[0].id)
             res.send({
                 existsMsg: 'id가 이미 존재합니다'
             })
-        // /if
+            // /if
         } else {
-            var sql = {email, id , password}    
-            console.log('======sql')
-            console.log('======sql id: '+sql.id)
-            console.log('======sql email: '+sql.email)
-            console.log('======sql password: '+sql.password)
-            var query = connection.query('insert into user set ?', sql, function(err, rows) {
-                if(err) throw err;
-                if(rows.insertId){
-                console.log('join success!!!!')
-                console.log('rows id: '+rows.insertId)
-                res.send({
-                    successMsg: 'Welcome!!'
-                })
+            var sql = {
+                email,
+                id,
+                password
             }
-            // /query
+            console.log('======sql')
+            console.log('======sql id: ' + sql.id)
+            console.log('======sql email: ' + sql.email)
+            console.log('======sql password: ' + sql.password)
+            var query = connection.query('insert into user set ?', sql, function (err, rows) {
+                if (err) throw err;
+                if (rows.insertId) {
+                    console.log('join success!!!!')
+                    console.log('rows id: ' + rows.insertId)
+                    res.send({
+                        successMsg: 'Welcome!!'
+                    })
+                }
+                // /query
             })
         }
-    // /query
+        // /query
     })
-// /join
+    // /join
 })
 
 // POST /login
-app.post('/login', function(req, res, next) {
+app.post('/login', function (req, res, next) {
     console.log('POST /login')
-    console.log('id: '+req.body.userId);
-    console.log('password: '+req.body.password);
-    passport.authenticate('local-login', function(err, user, info) {
-        if(err) res.status(500).json(err);
-        if(!user) return res.status(401).json(info.message);
+    console.log('id: ' + req.body.userId);
+    console.log('password: ' + req.body.password);
+    passport.authenticate('local-login', function (err, user, info) {
+        if (err) res.status(500).json(err);
+        if (!user) return res.status(401).json(info.message);
 
-        req.logIn(user, function(err) {
-            if(err) {return next(err);}
+        req.logIn(user, function (err) {
+            if (err) {
+                return next(err);
+            }
             console.log('req.logIn')
-            console.log('getId: '+user.id)
+            console.log('getId: ' + user.id)
             return res.json(user);
         });
     })(req, res, next)
 })
-
-
