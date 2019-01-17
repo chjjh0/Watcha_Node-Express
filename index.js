@@ -142,6 +142,8 @@ app.use('/main', main)
 app.use('/join', main)
 app.use('/login', main)
 app.use('/category', main)
+app.use('/evaluate', main)
+
 // GET /category/init
 app.get('/category/init', function (req, res) {
     console.log('====/category/init')
