@@ -14,7 +14,7 @@ const {
 } = require('./public/router/middlewares');
 
 
-const portNo = process.env.PORT || 5000;
+const portNo = process.env.PORT || 8000;
 
 const connection = mysql.createConnection({
     host: '127.0.0.1',
