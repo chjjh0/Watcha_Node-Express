@@ -117,7 +117,8 @@ passport.use('local-login', new LocalStrategy({
                     if (err) {
                         console.log('The Password do not match')
                         return done(err);
-                    } else if (rows.length) {
+                    } else if (rows.length === 0) {
+                        console.log(rows.length)
                         console.log('sever side login success!!')
                         console.log('rows[0]: ' + rows[0].email)
                         console.log('rows[0]: ' + rows[0].UID)
@@ -146,33 +147,32 @@ app.use('/evaluate', main)
 
 // GET /category/init
 app.get('/category/init', function (req, res) {
-    console.log('====/category/init')
-    console.log('req.body.categoryState: ' + req.body.categoryState);
     var query = connection.query('select * from video', function (err, rows) {
-        console.log('======category inside')
         if (err) throw err;
-        console.log(rows[0].image)
-        console.log(rows[0].title)
-        console.log(rows[0].releaseYear)
-        console.log(rows[0].ratingAge)
-        console.log(rows[0].runningtime)
         var videoHour = parseInt(rows[0].runningtime / 60);
         var videoMinute = parseInt(rows[0].runningtime % 60);
         var runningtime = videoHour + "시간 " + videoMinute + "분";
-        console.log('runningtime: ' + runningtime)
-        console.log('111111111111')
-        console.log(rows[1].image)
-        console.log(rows[1].title)
-        console.log(rows[1].releaseYear)
-        console.log(rows[1].ratingAge)
-        console.log(rows[1].runningtime)
-        console.log('222222222222')
-        console.log(rows.length)
         res.send({
             message: 'category success',
             video: rows,
             videoLength: rows.length
         })
+    })
+})
+
+// GET /category/genre
+app.get('/category/genre', function(req, res) {
+    var query = connection.query('select * from video where tagGenre=?', req.query.genre, function (err, rows) {
+        if (err) throw err;
+        if(rows.length === 0) {
+            console.log(req.query.genre+" 장르의 video가 없습니다")
+        } else {
+            res.send({
+                message: 'categore/genre success',
+                video: rows,
+                videoLength: rows.length
+            })
+        }
     })
 })
 
