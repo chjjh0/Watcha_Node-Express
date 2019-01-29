@@ -118,6 +118,8 @@ passport.use('local-login', new LocalStrategy({
                         console.log('The Password do not match')
                         return done(err);
                     } else if (rows.length === 0) {
+                        // 0129 이 부분 다시 처리해야 함
+                        // 조회 시 일치하는 게 없으면 err가 아닌 0을 반환
                         console.log(rows.length)
                         console.log('sever side login success!!')
                         console.log('rows[0]: ' + rows[0].email)
@@ -215,6 +217,11 @@ app.post('/join', isNotLoggedIn, async (req, res, next) => {
             console.log('======sql id: ' + sql.id)
             console.log('======sql email: ' + sql.email)
             console.log('======sql password: ' + sql.password)
+            var sql = {
+                email,
+                id,
+                password
+            }
             var query = connection.query('insert into user set ?', sql, function (err, rows) {
                 if (err) throw err;
                 if (rows.insertId) {
@@ -250,4 +257,46 @@ app.post('/login', function (req, res, next) {
             return res.json(user);
         });
     })(req, res, next)
+})
+
+// POST /comment/write
+app.post('/comment/write', function(req, res) {
+    console.log('comment=====')
+    console.log('작성자::: ', req.body.id)
+    console.log('댓글 내용::: ', req.body.comment)
+    var videoIndex = 52;
+    var title = "아이언 맨 1";
+    var writer = req.body.id;
+    var comment = req.body.comment;
+    var writeDate = "2018-01-01"
+    var sql = {
+        videoIndex,
+        title,
+        writer,
+        comment,
+        writeDate
+    } 
+    var query = connection.query('insert into comment set ?', sql, function (err, rows) {
+        if (err) throw err;
+        console.log("comment 성공!!!!")
+    })
+    res.send({
+        message: "comment 등록 성공!!!!"
+    })
+})
+
+// GET /comment/read
+app.get('/comment/read', function(req, res) {
+    console.log("/comment/read========")
+    var query = connection.query('select * from comment ORDER BY commentIndex desc', function(err, rows) {
+        if (err) throw err;
+        console.log("comment 조회 성공!!!!") 
+        if(rows) {
+            console.log(rows)
+        }
+        res.send({
+            totalComment: rows,
+            commentCount: rows.length
+        })
+    })
 })
