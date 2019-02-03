@@ -47,14 +47,14 @@ app.use(flash());
 // passport Strategy
 passport.serializeUser(function (user, done) {
     console.log('===serializeuser')
-    console.log('passport session save :', user.id)
+    console.log('4 passport session save :', user.id)
     done(null, user.id)
 })
 
-passport.deserializeUser(function (id, done) {
+passport.deserializeUser(function (user, done) {
     console.log('===deserializeuser')
-    console.log('passport session getId :', id)
-    var query = connection.query('select id from user where UID=?', [id], function (err, user) {
+    console.log('passport session getId :', user)
+    connection.query('select id from user where id=?', [user], function (err, user) {
         if (err) throw err;
         console.log('id : ', user[0].id)
         done(null, user)
@@ -69,7 +69,7 @@ passport.use('local-join', new LocalStrategy({
     console.log('local-join callback called')
     console.log(id)
     console.log(password)
-    var query = connection.query('select * from user where id=?', [id], function (err, rows) {
+    connection.query('select * from user where id=?', [id], function (err, rows) {
         if (err) return done(err);
         if (rows.length) {
             console.log('existed user')
@@ -84,7 +84,7 @@ passport.use('local-join', new LocalStrategy({
                 id,
                 password
             }
-            var query = connection.query('insert into user set ?', sql, function (err, rows) {
+            connection.query('insert into user set ?', sql, function (err, rows) {
                 if (err) throw err;
                 console.log('rows id: ' + rows.insertId)
                 return done(null, {
@@ -101,55 +101,58 @@ passport.use('local-login', new LocalStrategy({
     passwordField: 'password',
     passReqToCallback: true
 }, function (req, id, password, done) {
-    console.log('local-login')
-    console.log('id: ' + id)
-    console.log('password: ' + password)
-    var query = connection.query('select * from user where id=?', [id], function (err, rows) {
+    console.log('2 passport inside')
+    console.log('2 id: ' + id)
+    console.log('2 password: ' + password)
+    connection.query('select * from user where id=?', [id], function (err, rows) {
         if (err) return done(err);
-        if (rows.length) {
-            console.log('had id')
-            console.log('id: ' + id)
-            console.log('password: ' + password)
-            var query = connection.query(
-                'select * from user where id=? and password=?',
-                [id, password],
-                function (err, rows) {
-                    if (err) {
-                        console.log('The Password do not match')
-                        return done(err);
-                    } else if (rows.length === 0) {
-                        // 0129 이 부분 다시 처리해야 함
-                        // 조회 시 일치하는 게 없으면 err가 아닌 0을 반환
-                        console.log(rows.length)
-                        console.log('sever side login success!!')
-                        console.log('rows[0]: ' + rows[0].email)
-                        console.log('rows[0]: ' + rows[0].UID)
-                        return done(null, {
-                            'email': rows[0].email,
-                            'id': rows[0].UID
-                        });
-                    }
-                }
-            )
-        } else {
-            console.log('id not found')
+        if (rows.length === 0) {
             return done(null, false, {
                 'message': 'your login info is not found!!'
+            })
+        } else {
+            console.log('3 ID가 일치합니다')
+            console.log('3 id is', rows[0].id)
+            console.log('3 password is:::: ',rows[0].password)
+            return done(null, {
+                'id': rows[0].id
             })
         }
     })
 }))
 // GET routing
 app.use('/', main)
+app.use('/profile', isLoggedIn, main)
 app.use('/main', main)
 app.use('/join', main)
 app.use('/login', main)
 app.use('/category', main)
 app.use('/evaluate', main)
+app.use('/favorite', main)
+
+
+// GET /isLogin
+app.get('/isLogin', function(req, res) {
+    var idCookie = req.user;
+    if(idCookie) {
+        console.log('로그인 중입니다')
+        console.log('user::: ', idCookie)
+        res.send({'user': idCookie})
+    } else {
+        res.send({'message': '로그인 전입니다'})
+    }
+})
+
+// GET /logout
+app.get('/logout', function(req, res) {
+    console.log('logout입니다요')
+    req.logOut()
+    res.redirect('/')
+})
 
 // GET /category/init
 app.get('/category/init', function (req, res) {
-    var query = connection.query('select * from video', function (err, rows) {
+    connection.query('select * from video', function (err, rows) {
         if (err) throw err;
         var videoHour = parseInt(rows[0].runningtime / 60);
         var videoMinute = parseInt(rows[0].runningtime % 60);
@@ -164,7 +167,7 @@ app.get('/category/init', function (req, res) {
 
 // GET /category/genre
 app.get('/category/genre', function(req, res) {
-    var query = connection.query('select * from video where tagGenre=?', req.query.genre, function (err, rows) {
+    connection.query('select * from video where tagGenre=?', req.query.genre, function (err, rows) {
         if (err) throw err;
         if(rows.length === 0) {
             console.log(req.query.genre+" 장르의 video가 없습니다")
@@ -178,6 +181,73 @@ app.get('/category/genre', function(req, res) {
     })
 })
 
+// GET /comment/read
+app.get('/comment/read', function(req, res) {
+    console.log("/comment/read========")
+    connection.query('select * from comment ORDER BY commentIndex desc', function(err, rows) {
+        if (err) throw err;
+        console.log("comment 조회 성공!!!!") 
+        if(rows) {
+            console.log(rows)
+        }
+        res.send({
+            totalComment: rows,
+            commentCount: rows.length
+        })
+    })
+})
+
+
+// POST /addFavorite
+app.post('/addFavorite', function(req, res) {
+    console.log('addFavorite=====')
+    var userId = req.body.userId;
+    var videoIndex = req.body.videoIndex;
+    var sql = {
+        userId,
+        videoIndex,
+    }
+    // 회원가입과 유사하게 보고싶어요에 비디오가 이미 추가됐는지 확인 후 추가
+    connection.query('select videoIndex from favorite where userId=?', userId, function(err, rows) {
+        if (err) throw err;
+        var msg = '';
+        if(rows) {
+            console.log('이미 보고싶어요에 있습니다')
+            msg = '이미 보고싶어요에 있습니다';
+        } else {
+            connection.query('insert into favorite set ?', sql, function (err, rows) {
+                if (err) throw err;
+                console.log("favorite 성공!!!!")
+                msg = 'favorite 등록 성공!!!!'
+            })
+        }
+        res.send({
+            message: msg
+        })
+    })
+})
+
+// GET /readFavorite
+app.get('/readFavorite', function(req, res) {
+    console.log("/readFavorite========")
+    console.log("userId::: ",req.query.userId)
+    var userId = req.query.userId;
+    // 'SELECT * FROM video WHERE videoIndex=ANY(SELECT videoIndex FROM favorite WHERE userId=?)'
+    var subQuery = 
+    'SELECT * FROM video ' +
+    'WHERE videoIndex=ANY' +
+    '(SELECT videoIndex FROM favorite WHERE userId=?) '
+    connection.query(subQuery, userId, function(err, rows) {
+        if (err) throw err;
+        if(rows) {
+            console.log(rows)
+        }
+        res.send({
+            message: 'readFavorite success!!!',
+            favoriteVideo: rows
+        })
+    })
+})
 
 // POST /join
 app.post('/join', isNotLoggedIn, async (req, res, next) => {
@@ -192,7 +262,7 @@ app.post('/join', isNotLoggedIn, async (req, res, next) => {
     console.log('email: ', email)
     console.log('id: ', id)
     console.log('password: ', password)
-    var query = connection.query('select id from user where id=?', [id], function (err, rows) {
+    connection.query('select id from user where id=?', [id], function (err, rows) {
         console.log('inside query')
         if (err) {
             console.log('err 발생')
@@ -222,7 +292,7 @@ app.post('/join', isNotLoggedIn, async (req, res, next) => {
                 id,
                 password
             }
-            var query = connection.query('insert into user set ?', sql, function (err, rows) {
+            connection.query('insert into user set ?', sql, function (err, rows) {
                 if (err) throw err;
                 if (rows.insertId) {
                     console.log('join success!!!!')
@@ -241,9 +311,9 @@ app.post('/join', isNotLoggedIn, async (req, res, next) => {
 
 // POST /login
 app.post('/login', function (req, res, next) {
-    console.log('POST /login')
-    console.log('id: ' + req.body.userId);
-    console.log('password: ' + req.body.password);
+    console.log('/login ======')
+    console.log('1 id: ' + req.body.userId);
+    console.log('1 password: ' + req.body.password);
     passport.authenticate('local-login', function (err, user, info) {
         if (err) res.status(500).json(err);
         if (!user) return res.status(401).json(info.message);
@@ -252,8 +322,8 @@ app.post('/login', function (req, res, next) {
             if (err) {
                 return next(err);
             }
-            console.log('req.logIn')
-            console.log('getId: ' + user.id)
+            console.log('5 req.logIn')
+            console.log('5 getId: ' + user.id)
             return res.json(user);
         });
     })(req, res, next)
@@ -276,7 +346,7 @@ app.post('/comment/write', function(req, res) {
         comment,
         writeDate
     } 
-    var query = connection.query('insert into comment set ?', sql, function (err, rows) {
+    connection.query('insert into comment set ?', sql, function (err, rows) {
         if (err) throw err;
         console.log("comment 성공!!!!")
     })
@@ -285,18 +355,6 @@ app.post('/comment/write', function(req, res) {
     })
 })
 
-// GET /comment/read
-app.get('/comment/read', function(req, res) {
-    console.log("/comment/read========")
-    var query = connection.query('select * from comment ORDER BY commentIndex desc', function(err, rows) {
-        if (err) throw err;
-        console.log("comment 조회 성공!!!!") 
-        if(rows) {
-            console.log(rows)
-        }
-        res.send({
-            totalComment: rows,
-            commentCount: rows.length
-        })
-    })
-})
+
+
+

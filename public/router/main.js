@@ -19,6 +19,7 @@ app.use(flash());
 router.get('/', function(req, res) {
     console.log('====//////')
     
+    
     // if(req.user || req.flash('error')) {
     //     //var id = req.user[0].id;
     //     var errMsg = req.flash('error')
@@ -45,7 +46,24 @@ router.get('/login', function(req, res) {
     res.sendFile(path.join(__dirname, '../main.html'));
 })
 
+router.get('/category', function(req, res) {
+    console.log('===/category')
+    res.sendFile(path.join(__dirname, '../main.html'));
+})
 
+router.get('/evaluate', function(req, res) {
+    console.log('===/evaluate')
+    res.sendFile(path.join(__dirname, '../main.html'));
+})
+
+router.get('/favorite', function(req, res) {
+    if(!req.user) {
+        // /favorite로 접근 시
+        // cookie에 저장된 login 정보가 없으면 login 페이지로 이동
+        res.redirect('http://127.0.0.1:8000/login');
+    }
+    res.sendFile(path.join(__dirname, '../main.html'));
+})
 
 
 
