@@ -202,28 +202,37 @@ app.get('/comment/read', function(req, res) {
 app.post('/addFavorite', function(req, res) {
     console.log('addFavorite=====')
     var userId = req.body.userId;
-    var videoIndex = req.body.videoIndex;
+    var videoIndex = Number(req.body.videoIndex);
     var sql = {
         userId,
         videoIndex,
     }
-    // 회원가입과 유사하게 보고싶어요에 비디오가 이미 추가됐는지 확인 후 추가
+    var msg = '';
+    // 보고싶어요에 비디오가 이미 추가됐는지 확인
     connection.query('select videoIndex from favorite where userId=?', userId, function(err, rows) {
         if (err) throw err;
-        var msg = '';
         if(rows) {
-            console.log('이미 보고싶어요에 있습니다')
-            msg = '이미 보고싶어요에 있습니다';
-        } else {
-            connection.query('insert into favorite set ?', sql, function (err, rows) {
-                if (err) throw err;
-                console.log("favorite 성공!!!!")
-                msg = 'favorite 등록 성공!!!!'
-            })
+            console.log('1::: ')
+            // videoIndex를 이용한 '중복검사'
+            for(var i=0; i<rows.length; i++) {
+                console.log('2::: ')
+                if(videoIndex === rows[i].videoIndex) {
+                    console.log('3::: ')
+                    msg = '이미 보고싶어요에 있습니다';   
+                    break;
+                }
+            }
+            console.log('4::: ', msg)
+            // 보고싶어요에 비디오 중복이 없다면 보고싶어요에 '추가'
+            if(msg === '') {
+                console.log('favorite 등록===')
+                connection.query('insert into favorite set ?', sql, function (err, rows) {
+                    if (err) throw err;
+                })
+                msg = '보고싶어요에 등록하였습니다';
+            }
+                res.send({message: msg})    
         }
-        res.send({
-            message: msg
-        })
     })
 })
 
@@ -232,7 +241,7 @@ app.get('/readFavorite', function(req, res) {
     console.log("/readFavorite========")
     console.log("userId::: ",req.query.userId)
     var userId = req.query.userId;
-    // 'SELECT * FROM video WHERE videoIndex=ANY(SELECT videoIndex FROM favorite WHERE userId=?)'
+    // SELECT * FROM video WHERE videoIndex=ANY(SELECT videoIndex FROM favorite WHERE userId=?)
     var subQuery = 
     'SELECT * FROM video ' +
     'WHERE videoIndex=ANY' +
@@ -248,6 +257,29 @@ app.get('/readFavorite', function(req, res) {
         })
     })
 })
+
+// POST /deleteFavorite
+app.post('/deleteFavorite', function(req, res) {
+    var userId = req.body.userId;
+    var videoIndex = req.body.videoIndex;
+    var confirmSQL = 'SELECT * FROM favorite WHERE userId=? and videoIndex=?';
+    var deleteSQL = 'DELETE FROM favorite WHERE userId=? and videoIndex=?';
+    // 보고싶어요에서 지우기 전에 DB에 있는지 확인하여 중복 수행 방지
+    connection.query(confirmSQL, [userId, videoIndex], function(err, rows) {
+        if (err) throw err;
+        if (rows.length >= 1) {
+            // DB에 있을 경우 삭제 진행
+            connection.query(deleteSQL, [userId, videoIndex], function(err, rows) {
+                if (err) throw err;
+            })
+        } else {
+            // DB에 없을 경우 삭제 수행 X
+            //console.log('DB에 없습니다')
+        }
+    })
+    
+})
+
 
 // POST /join
 app.post('/join', isNotLoggedIn, async (req, res, next) => {
