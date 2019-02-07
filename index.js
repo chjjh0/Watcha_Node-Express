@@ -95,6 +95,38 @@ passport.use('local-join', new LocalStrategy({
         }
     })
 }))
+
+// GET routing
+app.use('/', main)
+app.use('/profile', isLoggedIn, main)
+app.use('/main', main)
+app.use('/join', main)
+app.use('/login', main)
+app.use('/category', main)
+app.use('/evaluate', main)
+app.use('/favorite', main)
+
+
+
+// POST /login
+app.post('/login', function (req, res, next) {
+    console.log('/login ======')
+    console.log('1 id: ' + req.body.userId);
+    console.log('1 password: ' + req.body.password);
+    passport.authenticate('local-login', function (err, user, info) {
+        if (err) res.status(500).json(err);
+        if (!user) return res.status(401).json(info.message);
+
+        req.logIn(user, function (err) {
+            if (err) {
+                return next(err);
+            }
+            console.log('5 req.logIn')
+            console.log('5 getId: ' + user.id)
+            return res.json(user);
+        });
+    })(req, res, next)
+})
 // login use passport
 passport.use('local-login', new LocalStrategy({
     usernameField: 'userId',
@@ -112,41 +144,57 @@ passport.use('local-login', new LocalStrategy({
             })
         } else {
             console.log('3 ID가 일치합니다')
-            console.log('3 id is', rows[0].id)
-            console.log('3 password is:::: ',rows[0].password)
-            return done(null, {
-                'id': rows[0].id
+            connection.query('select * from user where id=? and password=?', [id, password], function(err, rows) {
+                if (err) return done(err);
+                if (rows.length === 0) {
+                    console.log('3 비밀번호가 틀렸습니다')
+                    return done(null, false, {
+                        'message': 'Incorrect password'
+                    })
+                }
+                if (rows.length === 1) {
+                    return done(null, {
+                        'message': 'welcome!!!',
+                        'id': rows[0].id
+                    })
+                }
             })
         }
     })
 }))
-// GET routing
-app.use('/', main)
-app.use('/profile', isLoggedIn, main)
-app.use('/main', main)
-app.use('/join', main)
-app.use('/login', main)
-app.use('/category', main)
-app.use('/evaluate', main)
-app.use('/favorite', main)
+
 
 
 // GET /isLogin
 app.get('/isLogin', function(req, res) {
-    var idCookie = req.user;
+    // sessionStorage의 값과 cookie의 값을 비교
+    // 로그인 여부를 확인
+    // session에 남아 있더라도 cookie에 없으면
+    // 로그인 전으로 판정
+    // client쪽에서 sessionStorage 파기
+    var idSession = req.query.id
+    var idCookie = req.user
+    console.log('로그인 여부 확인=========')
+    console.log('session ::: ',idSession)
+    console.log('cookie ::: ', idCookie)
+    
     if(idCookie) {
-        console.log('로그인 중입니다')
-        console.log('user::: ', idCookie)
-        res.send({'user': idCookie})
-    } else {
-        res.send({'message': '로그인 전입니다'})
+        if(idSession === idCookie[0].id) {
+            // 값이 서로 같다면 로그인 '중'
+            res.send({'user': idCookie})
+        } else {
+            // 값이 서로 다르다면 로그인 '전'
+            res.send({'message': 'before login'})
+        }
     }
 })
 
 // GET /logout
 app.get('/logout', function(req, res) {
-    console.log('logout입니다요')
+    console.log('logout입니다======')
+    console.log('before::: ', req.user)
     req.logOut()
+    console.log('after::: ', req.user)
     res.redirect('/')
 })
 
@@ -181,17 +229,49 @@ app.get('/category/genre', function(req, res) {
     })
 })
 
-// GET /comment/read
-app.get('/comment/read', function(req, res) {
-    console.log("/comment/read========")
-    connection.query('select * from comment ORDER BY commentIndex desc', function(err, rows) {
+// POST /CreateComment
+app.post('/createComment', function(req, res) {
+    console.log('CreateComment=====')
+    // new Date()로 yyyy-mm-ddT...형식으로 되기에
+    // 번거롭지만 year/month/day를 나눠 진행
+    var year = new Date().getFullYear();
+    var month = new Date().getMonth() + 1;
+    var day = new Date().getDate();
+    var videoIndex = req.body.videoIndex;
+    var title = "아이언 맨 1";
+    var writer = req.body.userId;
+    var comment = req.body.comment;
+    var writeDate = year + '-' + month + '-' + day
+    var sql = {
+        videoIndex,
+        title,
+        writer,
+        comment,
+        writeDate
+    } 
+    connection.query('insert into comment set ?', sql, function (err, rows) {
         if (err) throw err;
-        console.log("comment 조회 성공!!!!") 
+        console.log("comment 성공!!!!")
+    })
+    res.send({
+        message: "comment 등록 성공!!!!"
+    })
+})
+// GET /ReadComment
+app.get('/ReadComment', function(req, res) {
+    console.log("/ReadComment========")
+    console.log(req.query.videoIndex)
+    var videoindex = req.query.videoIndex
+    var readCommentSQL = 'SELECT commentIndex, videoIndex, writer, comment, title, date_format(writeDate, "%y-%m-%d") as writeDate FROM comment WHERE videoIndex=? ORDER BY commentIndex desc;'
+    // connection.query('select * from comment ORDER BY commentIndex desc', function(err, rows)
+    connection.query(readCommentSQL, videoindex, function(err, rows) {
+        if (err) throw err;
         if(rows) {
-            console.log(rows)
+            console.log('조회 성공!!!')
+            //console.log(rows)
         }
         res.send({
-            totalComment: rows,
+            comment: rows,
             commentCount: rows.length
         })
     })
@@ -201,13 +281,15 @@ app.get('/comment/read', function(req, res) {
 // POST /addFavorite
 app.post('/addFavorite', function(req, res) {
     console.log('addFavorite=====')
+    console.log("userId::: ",req.body.userId)
+    console.log("videoIndex::: ",req.body.videoIndex)
     var userId = req.body.userId;
     var videoIndex = Number(req.body.videoIndex);
     var sql = {
         userId,
         videoIndex,
     }
-    var msg = '';
+    var msg = ' ';
     // 보고싶어요에 비디오가 이미 추가됐는지 확인
     connection.query('select videoIndex from favorite where userId=?', userId, function(err, rows) {
         if (err) throw err;
@@ -224,7 +306,7 @@ app.post('/addFavorite', function(req, res) {
             }
             console.log('4::: ', msg)
             // 보고싶어요에 비디오 중복이 없다면 보고싶어요에 '추가'
-            if(msg === '') {
+            if(msg === ' ') {
                 console.log('favorite 등록===')
                 connection.query('insert into favorite set ?', sql, function (err, rows) {
                     if (err) throw err;
@@ -282,7 +364,7 @@ app.post('/deleteFavorite', function(req, res) {
 
 
 // POST /join
-app.post('/join', isNotLoggedIn, async (req, res, next) => {
+app.post('/join', isNotLoggedIn, (req, res, next) => {
     console.log('====POST /join')
     console.log('email: ', req.body.email)
     console.log('id: ', req.body.userId)
@@ -341,51 +423,7 @@ app.post('/join', isNotLoggedIn, async (req, res, next) => {
     // /join
 })
 
-// POST /login
-app.post('/login', function (req, res, next) {
-    console.log('/login ======')
-    console.log('1 id: ' + req.body.userId);
-    console.log('1 password: ' + req.body.password);
-    passport.authenticate('local-login', function (err, user, info) {
-        if (err) res.status(500).json(err);
-        if (!user) return res.status(401).json(info.message);
 
-        req.logIn(user, function (err) {
-            if (err) {
-                return next(err);
-            }
-            console.log('5 req.logIn')
-            console.log('5 getId: ' + user.id)
-            return res.json(user);
-        });
-    })(req, res, next)
-})
-
-// POST /comment/write
-app.post('/comment/write', function(req, res) {
-    console.log('comment=====')
-    console.log('작성자::: ', req.body.id)
-    console.log('댓글 내용::: ', req.body.comment)
-    var videoIndex = 52;
-    var title = "아이언 맨 1";
-    var writer = req.body.id;
-    var comment = req.body.comment;
-    var writeDate = "2018-01-01"
-    var sql = {
-        videoIndex,
-        title,
-        writer,
-        comment,
-        writeDate
-    } 
-    connection.query('insert into comment set ?', sql, function (err, rows) {
-        if (err) throw err;
-        console.log("comment 성공!!!!")
-    })
-    res.send({
-        message: "comment 등록 성공!!!!"
-    })
-})
 
 
 
